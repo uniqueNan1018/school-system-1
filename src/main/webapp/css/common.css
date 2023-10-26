@@ -1,0 +1,24 @@
+@charset "UTF-8";
+.opt-row {
+	isplay: flex;
+    padding-bottom: 20px;
+    /* border-bottom: 1px solid #ddd; */
+    margin-bottom: 20px;
+}
+.search-input {
+	width: 300px !important;
+	margin-right: 10px;
+}
+.add-item-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.add-item-label {
+    width: 100px;
+    text-align: right;
+    padding-right: 10px;
+}
+.add-item-input {
+    flex: 1;
+}

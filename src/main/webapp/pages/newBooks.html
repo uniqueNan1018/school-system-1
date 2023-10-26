@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../css/common.css">
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<title>図書管理</title>
+</head>
+<body>
+	<div id="app">
+		<h1>図書管理</h1>
+		<div class="opt-row">
+			<el-input placeholder="図書名を入力してください" v-model="bookName" class="search-input"></el-input>
+			<el-button>検索</el-button>
+			<el-button 
+				type="primary" @click="openCreate">
+			新規作成</el-button>
+		</div>
+		<el-table
+	      :data="newBooks"
+	      style="width: 100%">
+	      <el-table-column
+	        type="index"
+	        label="番号"
+	        width="200">
+	      </el-table-column>
+	      <el-table-column
+	        prop="type"
+	        label="カテゴリー"
+	        width="200">
+	      </el-table-column>
+	      <el-table-column
+	        prop="name"
+	        label="図書名"
+	        width="200">
+          </el-table-column>
+       	  <el-table-column
+	        prop="description"
+	        label="概要"
+	        width="400"/>
+          </el-table-column>
+	      <el-table-column
+             property="opt"
+             label="操作">
+            <template slot-scope="scope">
+                <el-button type="primary" @click="onUpdate(scope.row)">変更</el-button>
+                <el-button type="danger" @click="onDelete(scope.row)">削除</el-button>
+            </template>
+       	  </el-table-column>
+	    </el-table>
+		<el-dialog 
+			:title="dialogType == 1 ? '新規作成' : '図書更新'"
+			:visible.sync="showAddDialog" 
+			width="40%">
+			<div class="add-item-container">
+                <div class="add-item-label">カテゴリー</div>
+                <el-input class="add-item-input" v-model="addNewBook.type" placeholder="入力してください"></el-input>
+            </div>
+            <div class="add-item-container">
+                <div class="add-item-label">図書名</div>
+                <el-input class="add-item-input" v-model="addNewBook.name" placeholder="入力してください"></el-input>
+            </div>
+            <div class="add-item-container">
+                <div class="add-item-label">概要</div>
+                <el-input class="add-item-input" v-model="addNewBook.description" placeholder="入力してください"></el-input>
+            </div>
+            <span slot="footer" class="dialog-footer">
+	            <el-button @click="addNewBookCancel">キャンセル</el-button>
+	            <el-button type="primary" @click="dialogConfirm">送信</el-button>
+	      </span>
+		</el-dialog>
+	</div>
+	
+</body>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/element-ui/lib/umd/locale/ja.js"></script>
+<script>
+ELEMENT.locale(ELEMENT.lang.ja);
+let vm;
+vm = new Vue({
+	el: "#app",
+	data(){
+		return {
+			bookName:"",
+			newBooks: [],
+			showAddDialog: false,
+			addNewBook: {},
+			dialogType: 1,
+		};
+	},
+	mounted() {
+        this.loadData();
+    },
+    methods: {
+    	async loadData() {
+    		let _this = this;
+    		axios({
+                method: "GET",
+                //url: "/newBooks",
+                url: "http://localhost:8080/school-system-1/newBooks",
+            })
+                .then((res = {}) => {
+                    const { data: { data: newBooks = [] } = {} } = res;
+                    console.log(newBooks);
+                    _this.newBooks = newBooks;
+                })
+    	},
+    	openCreate() {
+    		this.dialogType = 1;
+    		this.showAddDialog = true;
+    	},
+    	addNewBookCancel() {
+    		this.showAddDialog = false;
+            setTimeout(()=> {
+                this.addNewBook = {};
+            }, 10);
+    	},
+    	onUpdate(newBook) {
+    		this.dialogType = 2;
+    		this.addNewBook = newBook;
+    		this.showAddDialog = true;
+    	},
+    	onDelete(newBook) {
+   		　　this.$confirm('本当にこの図書を削除しますか', '図書を削除', {
+  	          confirmButtonText: '削除する',
+  	          cancelButtonText: 'キャンセル',
+  	          type: 'warning'
+  	        }).then(() => {
+  	        	const { id } = newBook;
+  	        	axios({
+  	                method: "DELETE",
+  	                url: `http://localhost:8080/school-system-1/newBooks/${id}`,
+  	            }).then((res = {}) => {
+  	            	const { data: { code, msg="" } = {} } = res;
+  	            	if (code == "20021") {
+  	            		this.$message({
+	        	            type: 'success',
+	        	            message: '削除しました'
+	        	        });
+  	            	} else if (code == "20020") {
+  	            		this.$message({
+  	           	          message: '図書の削除はできませんでした',
+  	           	          type: 'error'
+  	           	        });
+  	            	} else {
+  	            		this.$message({
+  	           	          message: msg,
+  	           	          type: 'error'
+  	           	        });
+  	            	}
+  	            }).finally(() => {
+  	            	this.loadData();
+  	            });
+  	        });
+    	},
+    	dialogConfirm() {
+    		if (this.dialogType == 1) {
+    			this.confirmCreate();
+    		} else if (this.dialogType == 2) {
+    			this.confirmUpdate();
+    		}
+    	},
+    	confirmCreate() {
+        	axios({
+                method: "POST",
+                url: "http://localhost:8080/school-system-1/newBooks",
+                data: this.addNewBook
+            }).then((res = {}) => {
+            	const { data: { code, msg="" } = {} } = res;
+            	if (code == "20011") {
+            		this.showAddDialog = false;
+            		this.$message({
+           	          message: '図書が追加しました',
+           	          type: 'success'
+           	        });
+            	} else if (code == "20010") {
+            		this.$message({
+           	          message: '図書の追加はできませんでした',
+           	          type: 'error'
+           	        });
+            	} else {
+            		this.$message({
+           	          message: msg,
+           	          type: 'error'
+           	        });
+            	}
+            }).finally(() => {
+            	this.loadData();
+            });
+        },
+        confirmUpdate() {
+        	axios({
+                method: "PUT",
+                url: "http://localhost:8080/school-system-1/newBooks",
+                data: this.addNewBook
+            }).then((res = {}) => {
+            	const { data: { code, msg="" } = {} } = res;
+            	if (code == "20031") {
+            		this.showAddDialog = false;
+            		this.$message({
+           	          message: '図書が更新しました',
+           	          type: 'success'
+           	        });
+            	} else if (code == "20030") {
+            		this.$message({
+           	          message: '図書の更新はできませんでした',
+           	          type: 'error'
+           	        });
+            	} else {
+            		this.$message({
+           	          message: msg,
+           	          type: 'error'
+           	        });
+            	}
+            }).finally(() => {
+            	this.loadData();
+            });
+        }
+    },
+    
+});
+</script>
+</html>
